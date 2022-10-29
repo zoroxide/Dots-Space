@@ -2,4 +2,4 @@
 
 Simple JS game
 
-try it at https://loay-mohamed-xv.github.io/Dots_Space/
+try it at https://loay-mohamed-xv.github.io/Dots-Space/
