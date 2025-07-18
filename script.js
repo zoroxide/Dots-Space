@@ -1,4 +1,4 @@
-Spacedots = new function() {
+Spacedots = new function () {
 
     var isMobile = (navigator.userAgent.toLowerCase().indexOf('android') != -1) || (navigator.userAgent.toLowerCase().indexOf('iphone') != -1);
 
@@ -22,6 +22,11 @@ Spacedots = new function() {
     var mouseY = (window.innerHeight - SCREEN_HEIGHT);
     var mouseIsDown = false;
 
+    // gamepad support
+    let gamepadIndex = null;
+
+
+
     var playing = false;
     var score = 0;
     var time = 0;
@@ -32,7 +37,7 @@ Spacedots = new function() {
     };
     var difficulty = 1;
 
-    this.init = function() {
+    this.init = function () {
 
         canvas = document.getElementById('world');
         status = document.getElementById('status');
@@ -53,13 +58,53 @@ Spacedots = new function() {
             window.addEventListener('resize', windowResizeHandler, false);
             startButton.addEventListener('click', startButtonClickHandler, false);
 
+            // gamepad support
+            window.addEventListener("gamepadconnected", function (e) {
+                gamepadIndex = e.gamepad.index;
+            });
+
+            // Start polling for gamepad input
+            window.addEventListener("gamepaddisconnected", function (e) {
+                if (gamepadIndex === e.gamepad.index) {
+                    gamepadIndex = null;
+                }
+            });
+
             player = new Player();
 
             windowResizeHandler();
 
+            if(!isMobile){
+                pollGamepad();
+            }
+
             setInterval(loop, 1000 / 70);
         }
     };
+
+    function pollGamepad() {
+        if (gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[gamepadIndex];
+            if (gp) {
+                // Left stick axes: gp.axes[0] (X), gp.axes[1] (Y)
+                // Deadzone to avoid drift
+                const deadzone = 0.15;
+                let x = gp.axes[0];
+                let y = gp.axes[1];
+                x = Math.abs(x) > deadzone ? x : 0;
+                y = Math.abs(y) > deadzone ? y : 0;
+
+                // Move the target position
+                mouseX += x * 10;
+                mouseY += y * 10;
+
+                // Clamp to screen
+                mouseX = Math.max(0, Math.min(mouseX, window.innerWidth));
+                mouseY = Math.max(0, Math.min(mouseY, window.innerHeight));
+            }
+        }
+        requestAnimationFrame(pollGamepad);
+    }
 
     function startButtonClickHandler(event) {
         event.preventDefault();
@@ -190,8 +235,8 @@ Spacedots = new function() {
 
             if (player.boost > 0 && (player.boost > 100 || player.boost % 3 != 0)) {
                 context.beginPath();
-                context.fillStyle = '#167a66'; 
-                context.strokeStyle = 'yellow'; 
+                context.fillStyle = '#167a66';
+                context.strokeStyle = 'yellow';
                 context.arc(player.position.x, player.position.y, player.size * 2, 0, Math.PI * 2, true);
                 context.fill();
                 context.stroke();
@@ -200,7 +245,7 @@ Spacedots = new function() {
             player.trail.push(new Point(player.position.x, player.position.y));
 
             context.beginPath();
-            context.strokeStyle = 'gold'; 
+            context.strokeStyle = 'gold';
             context.lineWidth = 2;
 
             for (i = 0, ilen = player.trail.length; i < ilen; i++) {
@@ -220,7 +265,7 @@ Spacedots = new function() {
             }
 
             context.beginPath();
-            context.fillStyle = 'orange'; 
+            context.fillStyle = 'orange';
             context.arc(player.position.x, player.position.y, player.size / 2, 0, Math.PI * 2, true);
             context.fill();
         }
@@ -246,7 +291,7 @@ Spacedots = new function() {
             }
 
             context.beginPath();
-            context.fillStyle = 'red'; 
+            context.fillStyle = 'red';
             context.arc(p.position.x, p.position.y, p.size / 2, 0, Math.PI * 2, true);
             context.fill();
 
@@ -278,7 +323,7 @@ Spacedots = new function() {
             }
 
             context.beginPath();
-            context.fillStyle = '#00ffcc'; 
+            context.fillStyle = '#00ffcc';
             context.arc(p.position.x, p.position.y, p.size / 2, 0, Math.PI * 2, true);
             context.fill();
 
@@ -343,12 +388,12 @@ function Point(x, y) {
         y: y
     };
 }
-Point.prototype.distanceTo = function(p) {
+Point.prototype.distanceTo = function (p) {
     var dx = p.x - this.position.x;
     var dy = p.y - this.position.y;
     return Math.sqrt(dx * dx + dy * dy);
 };
-Point.prototype.clonePosition = function() {
+Point.prototype.clonePosition = function () {
     return {
         x: this.position.x,
         y: this.position.y
